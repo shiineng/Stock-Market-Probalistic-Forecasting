@@ -9,14 +9,15 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import yfinance as yf
 
-def overall_analysis(ticker_symbol, start_date, end_date, return_column, buy_price, days, simulations):
+def overall_analysis(ticker_symbol, start_date, end_date, return_column, buy_price, days, simulations, line_color, hist_color):
     df = get_stock(ticker_symbol, start_date, end_date, return_column)
     aic_test = model_quality(df)
     print(f"AIC TEST:\n{aic_test}")
     # print(f"BIC TEST: \n {bic_test}")
     plot_line_fit(df, ticker_symbol)
     params, best_dist = get_stock_dna(df, aic_test, 0.05)
-    predict_by_input(buy_price, best_dist, params, days, simulations)
+    predict_by_input(buy_price, best_dist, params, days, simulations, ticker_symbol, line_color, hist_color)
+
 
 
 
@@ -141,7 +142,7 @@ def get_stock_dna(df, aic_test, rf, column_of_interest="Simple-Returns"):
 
     return params, best_dist
 
-def predict_by_input(buy_price, best_dist, params, days, simulations):
+def predict_by_input(buy_price, best_dist, params, days, simulations, ticker_symbol, line_color, hist_color):
     dist_obj = getattr(stats, best_dist)
     sim_returns = dist_obj.rvs(*params, size=(days, simulations))
     price_multipliers = 1 + (sim_returns / 100)
@@ -154,47 +155,46 @@ def predict_by_input(buy_price, best_dist, params, days, simulations):
             x=list(range(days)),
             y=price_paths[:, sim],
             mode='lines',
-            line=dict(width=1, color='rgba(0, 0, 255, 0.7)'),
+            line=dict(width=1, color=line_color),
             showlegend=False
         ))
     
+    h_color = "white" if "255" in line_color else "red"
+    
     fig.add_hline(
-    y=buy_price, 
-    line_dash="dash", 
-    line_color="red", 
-    annotation_text="Starting Price", 
-    annotation_position="bottom right"
+        y=buy_price, 
+        line_dash="dash", 
+        line_color=h_color, 
+        annotation_text="Starting Price", 
+        annotation_position="bottom right"
     )
 
     fig.update_layout(
-    title="Monte Carlo: 100 Potential Paths",
-    xaxis_title="Days",
-    yaxis_title="Price ($)",
-    template="plotly_dark",
-    hovermode="x"
+        title=f"Monte Carlo: 100 Potential Paths [{ticker_symbol}]",
+        xaxis_title="Days",
+        yaxis_title="Price ($)",
+        template="plotly_dark",
+        hovermode="x"
     )
 
     fig.update_xaxes(range=[0, days])
-
     fig.show()
+
     final_prices = price_paths[-1]
     hist_fig = px.histogram(
         final_prices, 
         nbins=50, 
-        title="Distribution of Predicted Ending Prices",
+        title=f"Distribution of Predicted Ending Prices [{ticker_symbol}]",
         labels={'value': 'Final Price ($)'},
-        template="plotly_dark"
+        template="plotly_dark",
+        color_discrete_sequence=[hist_color]
     )
     hist_fig.show()
 
-    positiveCount = 0
-    negativeCount = 0
-
-    for price in price_paths[0]:
-        if price >= buy_price:
-            positiveCount += 1
-        else:
-            negativeCount += 1
+    positiveCount = np.sum(final_prices >= buy_price)
+    negativeCount = simulations - positiveCount
     
-    print(f"Proportion of positive or neutral return: {round(positiveCount/simulations, 3)}\nProportion of negative return: {round(negativeCount/simulations,3)}")
-    return price_paths[-1]
+    print(f"\n--- {ticker_symbol} Monte Carlo Results ---")
+    print(f"Prob. of positive or neutral return: {round(positiveCount/simulations, 3)}")
+    print(f"Prob. of negative return: {round(negativeCount/simulations, 3)}")
+    return final_prices
