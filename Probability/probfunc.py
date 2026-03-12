@@ -7,7 +7,6 @@ import plotly.graph_objects as go
 from scipy import stats
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
 import yfinance as yf
 
 def lnFit(CSVfile, columnName, outputFile):
