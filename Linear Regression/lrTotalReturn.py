@@ -132,7 +132,7 @@ def predictEnd2026(currentPrice, a, b, loc, scale, days=252, simulations=10000):
     )
 
     fig.update_layout(
-    title="Monte Carlo: 100 Potential Paths for AAPL (1 Year)",
+    title="Monte Carlo: 100 Potential Paths (1 Year)",
     xaxis_title="Days",
     yaxis_title="Price ($)",
     template="plotly_dark",
