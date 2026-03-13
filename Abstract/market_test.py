@@ -184,10 +184,26 @@ def predict_by_input(buy_price, best_dist, params, days, simulations, ticker_sym
     )
     hist_fig.show()
 
-    positiveCount = np.sum(final_prices >= buy_price)
-    negativeCount = simulations - positiveCount
+    positive_count = np.sum(final_prices >= buy_price)
+    negative_count = simulations - positive_count
+
+    min_price = np.min(final_prices)
+    max_price = np.max(final_prices)
+
+    ci_lower = np.percentile(final_prices, 2.5) # 95% CI Interval
+    ci_upper = np.percentile(final_prices, 97.5) # 95% CI Interval
+
+    counts, bin_edges = np.histogram(final_prices, bins=50)
+    max_index = np.argmax(counts)
+    max_count = counts[max_index]
+    mode_lower = bin_edges[max_index]
+    mode_upper = bin_edges[max_index + 1]
     
-    print(f"\n{ticker_symbol} Monte Carlo Results")
-    print(f"Prob. of positive or neutral return: {round(positiveCount/simulations, 3)}")
-    print(f"Prob. of negative return: {round(negativeCount/simulations, 3)}")
+    print(f"{ticker_symbol} Monte Carlo Results")
+    print(f"Prob. of positive or neutral return: {round(positive_count/simulations, 3)}")
+    print(f"Prob. of negative return: {round(negative_count/simulations, 3)}")
+    print(f"Absolute Simulated Range: ${min_price:.2f} to ${max_price:.2f}")
+    print(f"95% Confidence Interval:  ${ci_lower:.2f} to ${ci_upper:.2f}")
+    print(f"Most Frequent Price Range: ${mode_lower:.2f} to ${mode_upper:.2f} ({max_count} simulations)")
+    
     return final_prices
